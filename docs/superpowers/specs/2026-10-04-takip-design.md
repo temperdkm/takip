@@ -64,6 +64,11 @@ durumunu gösteren bir widget olacak.
 
 Bkz. §3.
 
+### 4.4 Widget kurulumu
+
+Bugün ekranının en altındaki bağlantıyla açılır. Kurulum adımları, "Betiği kopyala"
+düğmesi ve geri tuşu var. Bkz. §10.
+
 ## 5. Kurallar
 
 ### 5.1 Gün sınırı: 04:00
@@ -128,6 +133,8 @@ takip/
   widget/takip-widget.js   — Scriptable betiği, tek dosya
   ikon/                    — ana ekran ikonları
   test/                    — node --test ile çalışan testler
+  araclar/                 — oda kurulumu, Firebase denemesi, ikon üretimi, yerel sunucu
+  gizli/                   — oda kodları, doldurulmuş kurallar, linkler (.gitignore'da)
 ```
 
 - `[saf]` işaretli modüller DOM'a ve ağa dokunmaz, Node'da test edilir.
@@ -152,8 +159,12 @@ takip/<ODA_KODU>/<YYYY-MM-DD>/<ali|yagmur> = {
 - Her alan isteğe bağlıdır. Olmayan alan "girilmedi" demektir.
 - Tik kapatılınca `false` yazılır. Su ya da uyku boşaltılınca alan silinir (`null`).
 
-**Firebase kuralları** (mevcut `oyun` kuralı korunur, `<ODA_KODU>` yerine gerçek kod
-yazılır; gerçek kod yalnızca konsola girilir, bu belgeye ve depoya girmez):
+**Test odası:** Gerçek odanın yanında ikinci bir gizli oda kodu (`<TEST_ODA>`) daha
+açıktır. Tarayıcı ve Firebase testleri bu odayı kullanır, gerçek odaya dokunmaz.
+
+**Firebase kuralları** (mevcut `oyun` kuralı korunur, `<ODA_KODU>` ve `<TEST_ODA>`
+yerine gerçek kodlar yazılır; gerçek kodlar yalnızca konsola girilir, bu belgeye ve
+depoya girmez):
 
 ```json
 {
@@ -161,11 +172,10 @@ yazılır; gerçek kod yalnızca konsola girilir, bu belgeye ve depoya girmez):
     "oyun": { ".read": true, ".write": true },
     "takip": {
       "$oda": {
-        ".read": "$oda === '<ODA_KODU>'",
+        ".read": "$oda === '<ODA_KODU>' || $oda === '<TEST_ODA>'",
         "$gun": {
-          ".validate": "$gun.matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)",
           "$kisi": {
-            ".write": "$oda === '<ODA_KODU>' && ($kisi === 'ali' || $kisi === 'yagmur')",
+            ".write": "($oda === '<ODA_KODU>' || $oda === '<TEST_ODA>') && ($kisi === 'ali' || $kisi === 'yagmur') && $gun.matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)",
             "ders":   { ".validate": "newData.isBoolean()" },
             "spor":   { ".validate": "newData.isBoolean()" },
             "yemek":  { ".validate": "newData.isBoolean()" },
@@ -180,7 +190,9 @@ yazılır; gerçek kod yalnızca konsola girilir, bu belgeye ve depoya girmez):
 }
 ```
 
-`takip` düğümünün kendisi okunamaz, yani oda kodları listelenemez.
+`takip` düğümünün kendisi okunamaz, yani oda kodları listelenemez. Gün biçimi
+kontrolü `.write` içindedir, çünkü üst düğümdeki `.validate` alt yola yapılan
+yazmalarda çalışmaz.
 
 ## 9. Senkron
 
@@ -211,7 +223,13 @@ Ana ekran ikonu silinse bile link yeniden açılınca her şey geri gelir.
 ## 10. Widget (Scriptable)
 
 - Tek dosya `widget/takip-widget.js`. Üstünde `ODA` ve `BEN` sabitleri var. Depodaki
-  kopyada bunlar boştur, kişilere doldurulmuş kopya gönderilir.
+  kopyada bunlar boştur.
+- **Kurulum uygulamanın içinden yapılır:** Bugün ekranının en altında "Widget kurulumu"
+  bağlantısı var. Açılan ekranda kurulum adımları ve "Betiği kopyala" düğmesi bulunur.
+  Uygulama oda kodunu ve kişiyi zaten bildiği için betiği doldurup panoya kopyalar.
+  Kişi Scriptable'da yeni betik açıp yapıştırır. Betik mesajla gönderilmez, çünkü
+  mesajlaşma uygulamaları kodu bozabilir. Kopyalama başarısız olursa betik metni
+  ekranda seçilebilir bir kutuda gösterilir.
 - Firebase'den bugünün verisini REST ile çeker. Gün anahtarı ve tik sayımı
   uygulamadaki kurallarla aynıdır (§5).
 - **Küçük boy:** "BUGÜN" etiketi. İki kişi için isim, "n/4" ve ince ilerleme çubuğu.
@@ -245,10 +263,11 @@ Ana ekran ikonu silinse bile link yeniden açılınca her şey geri gelir.
   - `kuyruk.js`: ekle, birleştir (bekleyen sunucuyu ezer), gönderilince düş, araya
     giren değişiklik korunur.
   - Widget betiğinin gün ve tik hesabı, aynı örneklerle.
-- **Gerçek Firebase:** test oda koduyla yazma ve okuma. Kural testleri: yanlış kişi
-  adıyla, yanlış alanla, aralık dışı değerle ve yanlış oda koduyla yazmanın reddedildiği
-  doğrulanır.
-- **Görsel:** 390 px genişlikte tarayıcı bölmesinde açılıp taşma ve görünüş kontrol edilir.
+- **Gerçek Firebase:** test odasıyla yazma ve okuma. Kural testleri: yanlış kişi
+  adıyla, yanlış alanla, aralık dışı değerle, yanlış gün biçimiyle ve yanlış oda
+  koduyla yazmanın reddedildiği doğrulanır.
+- **Görsel:** 390 px genişlikte tarayıcı bölmesinde, test odasıyla açılıp taşma,
+  görünüş, iki kişi arası senkron ve internet kesikken kuyruk davranışı kontrol edilir.
 - **Telefon:** Ali kendi telefonunda kurar, ekran görüntüsüyle kontrol edilir.
   Scriptable'ın çizim API'si Windows'ta çalışmadığı için widget'ın son görünüşü
   burada doğrulanır.
@@ -262,7 +281,9 @@ Ana ekran ikonu silinse bile link yeniden açılınca her şey geri gelir.
 - **Teslim sırası:**
   1. Uygulama + Firebase. Ali Firebase kurallarını konsola yapıştırır, telefonda dener,
      düzeltmeleri söyler.
-  2. Widget. Ali Scriptable'ı kurar ve ekran görüntüsü atar.
-  3. Yağmur'a gönderim: link, widget betiği ve kurulum adımlarını içeren hazır mesaj.
+  2. Widget. Ali uygulamadaki "Widget kurulumu" ekranından Scriptable'ı kurar ve ekran
+     görüntüsü atar.
+  3. Yağmur'a gönderim: kişisel link ve kurulum adımlarını içeren hazır mesaj (betik
+     mesajda yok, uygulamadan kopyalanır).
 - **Telefonda doğrulanacak:** Ana ekrana eklerken `#oda=…&ben=…` kısmı korunuyor mu?
   Korunmuyorsa kurtarma ekranı devreye girer, kurulum mesajına oda kodu da eklenir.
