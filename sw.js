@@ -1,6 +1,6 @@
 // Uygulama internetsiz de açılsın diye dosyaları önbelleğe alır.
 // HER YAYINDA CACHE numarasını artır, yoksa telefon eski sürümde kalır.
-const CACHE = 'takip-v1';
+const CACHE = 'takip-v2';
 const FONT_CACHE = 'takip-font';
 const DOSYALAR = [
   './',
@@ -17,6 +17,7 @@ const DOSYALAR = [
   'ikon/ikon-180.png',
   'ikon/ikon-192.png',
   'ikon/ikon-512.png',
+  'widget/takip-widget.js',
 ];
 
 self.addEventListener('install', (e) => {

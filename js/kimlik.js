@@ -52,3 +52,10 @@ export function karsiTaraf(ben) {
 export function linkYap(taban, k) {
   return `${taban}#oda=${k.oda}&ben=${k.ben}`;
 }
+
+// Widget betiğindeki boş ODA ve BEN satırlarını doldurur.
+export function widgetKisisellestir(metin, k) {
+  return metin
+    .replace("const ODA = '';", `const ODA = '${k.oda}';`)
+    .replace("const BEN = '';", `const BEN = '${k.ben}';`);
+}

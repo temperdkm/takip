@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { KISILER, hashCoz, kimlikBul, girdiCoz, karsiTaraf, linkYap } from '../js/kimlik.js';
+import { KISILER, hashCoz, kimlikBul, girdiCoz, karsiTaraf, linkYap, widgetKisisellestir } from '../js/kimlik.js';
 
 const ODA = 'abcdefghijklmnopqrstuvwx'; // 24 karakter
 
@@ -44,5 +44,13 @@ test('link yapımı', () => {
   assert.equal(
     linkYap('https://temperdkm.github.io/takip/', { oda: ODA, ben: 'ali' }),
     `https://temperdkm.github.io/takip/#oda=${ODA}&ben=ali`,
+  );
+});
+
+test('widget betiği kişiselleştirilir', () => {
+  const metin = "const ODA = '';\nconst BEN = '';\nconst X = 1;";
+  assert.equal(
+    widgetKisisellestir(metin, { oda: ODA, ben: 'ali' }),
+    `const ODA = '${ODA}';\nconst BEN = 'ali';\nconst X = 1;`,
   );
 });

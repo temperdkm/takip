@@ -3,8 +3,8 @@ import { gunAnahtari, gunKaydir, duzenlenebilirMi } from './gun.js';
 import { girisCoz } from './kurallar.js';
 import { ekle, dus, birlestir, kuyrukOku, kuyrukYaz } from './kuyruk.js';
 import { oku, yaz, YetkiHatasi } from './veri.js';
-import { kimlikBul, kimlikKaydet, girdiCoz } from './kimlik.js';
-import { sayfaHtml, kurtarmaHtml, olaylariBagla } from './ekran.js';
+import { kimlikBul, kimlikKaydet, girdiCoz, widgetKisisellestir } from './kimlik.js';
+import { sayfaHtml, kurtarmaHtml, widgetHtml, olaylariBagla } from './ekran.js';
 
 const YENILEME_MS = 15000;
 const kok = document.getElementById('uygulama');
@@ -19,6 +19,7 @@ const durum = {
   hata: null,
   baglanti: 'tamam',
   gonderilemedi: false,
+  widget: null, // { durumu, betik } — widget kurulum ekranı açıkken
   kurtarmaSecili: null,
   kurtarmaMetin: '',
   kurtarmaHata: null,
@@ -34,20 +35,24 @@ const gosterilenGun = () => durum.acikGun || durum.bugun;
 const birlesik = () => birlestir(durum.veri, durum.kuyruk, durum.kimlik.ben);
 const benimKayit = (gun) => birlesik()[gun]?.[durum.kimlik.ben] || {};
 
+function sayfa() {
+  if (!durum.kimlik) return kurtarmaHtml(durum.kurtarmaSecili, durum.kurtarmaMetin, durum.kurtarmaHata);
+  if (durum.widget) return widgetHtml(durum.widget.durumu, durum.widget.betik);
+  return sayfaHtml({
+    ben: durum.kimlik.ben,
+    gun: gosterilenGun(),
+    bugun: durum.bugun,
+    veri: birlesik(),
+    kuyruk: durum.kuyruk,
+    duzenlenen: durum.duzenlenen,
+    hata: durum.hata,
+    baglanti: durum.baglanti,
+    gonderilemedi: durum.gonderilemedi,
+  });
+}
+
 function ciz() {
-  const html = durum.kimlik
-    ? sayfaHtml({
-      ben: durum.kimlik.ben,
-      gun: gosterilenGun(),
-      bugun: durum.bugun,
-      veri: birlesik(),
-      kuyruk: durum.kuyruk,
-      duzenlenen: durum.duzenlenen,
-      hata: durum.hata,
-      baglanti: durum.baglanti,
-      gonderilemedi: durum.gonderilemedi,
-    })
-    : kurtarmaHtml(durum.kurtarmaSecili, durum.kurtarmaMetin, durum.kurtarmaHata);
+  const html = sayfa();
   if (html === sonHtml) return;
   kok.innerHTML = html;
   sonHtml = html;
@@ -109,6 +114,12 @@ function kuyrugaEkle(gun, alan, deger) {
   gonder();
 }
 
+function widgetDurumu(durumu, betik) {
+  if (!durum.widget) return; // kullanıcı bu arada geri döndüyse dokunma
+  durum.widget = { durumu, betik: betik ?? durum.widget.betik };
+  ciz();
+}
+
 function islem(ad, v) {
   if (ad !== 'sayiBitti' && ad !== 'kisi') durum.hata = null;
   switch (ad) {
@@ -156,7 +167,32 @@ function islem(ad, v) {
       return window.scrollTo(0, 0);
     case 'geri':
       durum.acikGun = null;
+      durum.widget = null;
       return ciz();
+    case 'widget':
+      durum.widget = { durumu: 'yukleniyor', betik: '' };
+      ciz();
+      window.scrollTo(0, 0);
+      fetch('widget/takip-widget.js')
+        .then((y) => {
+          if (!y.ok) throw new Error(String(y.status));
+          return y.text();
+        })
+        .then((metin) => widgetDurumu('hazir', widgetKisisellestir(metin, durum.kimlik)))
+        .catch(() => widgetDurumu('yuklenemedi', ''));
+      return undefined;
+    case 'kopyala':
+      // Panoya yazma dokunuşun içinde, beklemeden yapılmalı (Safari kuralı); betik önceden yüklendi.
+      if (!durum.widget?.betik) return undefined;
+      try {
+        navigator.clipboard.writeText(durum.widget.betik).then(
+          () => widgetDurumu('kopyalandi'),
+          () => widgetDurumu('kopyalanamadi'),
+        );
+      } catch {
+        widgetDurumu('kopyalanamadi');
+      }
+      return undefined;
     default:
       return undefined;
   }

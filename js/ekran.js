@@ -80,7 +80,8 @@ export function sayfaHtml(d) {
   const serit = d.baglanti === 'yetki' ? '<div class="serit">Bağlanamadı, linki kontrol et</div>' : '';
   const geri = bugunMu ? '' : '<button class="geri" data-islem="geri">‹ Bugün</button>';
   const baslik = `<header class="ust">${geri}<div class="tarih">${tarihYazisi(d.gun)}</div><h1>${bugunMu ? 'Bugün' : 'Geçmiş gün'}</h1></header>`;
-  return `${serit}${baslik}${tabloHtml(d)}${bugunMu ? gecmisHtml(d) : ''}`;
+  const alt = bugunMu ? `${gecmisHtml(d)}<button class="alt-baglanti" data-islem="widget">Widget kurulumu</button>` : '';
+  return `${serit}${baslik}${tabloHtml(d)}${alt}`;
 }
 
 export function kurtarmaHtml(secili, metin, hata) {
@@ -94,6 +95,35 @@ export function kurtarmaHtml(secili, metin, hata) {
     + `<input id="oda" class="metin-alani" autocomplete="off" autocapitalize="off" spellcheck="false" value="${kacis(metin || '')}">`
     + hataHtml
     + '<button class="ana-dugme" data-islem="basla">Başla</button>';
+}
+
+const WIDGET_DUGME = {
+  yukleniyor: 'Yükleniyor…',
+  hazir: 'Betiği kopyala',
+  kopyalandi: 'Kopyalandı',
+  kopyalanamadi: 'Betiği kopyala',
+  yuklenemedi: 'Tekrar dene',
+};
+
+const WIDGET_NOT = {
+  kopyalanamadi: '<div class="hata-satir">Kopyalanamadı. Aşağıdaki metnin tamamını seçip kopyala.</div>',
+  yuklenemedi: '<div class="hata-satir">Betik yüklenemedi, internetini kontrol et.</div>',
+};
+
+export function widgetHtml(durumu, betik) {
+  const islem = durumu === 'yuklenemedi' ? 'widget' : 'kopyala';
+  const kutu = durumu === 'kopyalanamadi' ? `<textarea class="betik" readonly>${kacis(betik)}</textarea>` : '';
+  return '<header class="ust"><button class="geri" data-islem="geri">‹ Bugün</button><div class="tarih">SCRIPTABLE</div><h1>Widget kurulumu</h1></header>'
+    + '<ol class="adimlar">'
+    + "<li>App Store'dan ücretsiz <b>Scriptable</b> uygulamasını indir.</li>"
+    + '<li>Aşağıdaki düğmeyle betiği kopyala.</li>'
+    + "<li>Scriptable'da sağ üstteki <b>+</b>'ya bas, yapıştır. Üstteki adı <b>TAKİP</b> yap, <b>Done</b>'a bas.</li>"
+    + "<li>Ana ekranda boş bir yere basılı tut. Sol üstteki <b>+</b>'ya ya da <b>Düzenle → Widget Ekle</b>'ye bas, <b>Scriptable</b>'ı seç, küçük ya da orta boyu ekle.</li>"
+    + "<li>Eklenen widget'a basılı tut, <b>Widget'ı Düzenle</b> → <b>Script</b> satırından <b>TAKİP</b>'i seç.</li>"
+    + '</ol>'
+    + `<button class="ana-dugme" data-islem="${islem}">${WIDGET_DUGME[durumu]}</button>`
+    + (WIDGET_NOT[durumu] || '')
+    + kutu;
 }
 
 export function olaylariBagla(kok, islem) {

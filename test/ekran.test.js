@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sayfaHtml, kurtarmaHtml, kacis } from '../js/ekran.js';
+import { sayfaHtml, kurtarmaHtml, kacis, widgetHtml } from '../js/ekran.js';
 
 const GUN = '2026-10-04';
 const say = (metin, parca) => metin.split(parca).length - 1;
@@ -83,4 +83,20 @@ test('kurtarma ekranı', () => {
 
 test('kaçış', () => {
   assert.equal(kacis('"<a>&\''), '&quot;&lt;a&gt;&amp;&#39;');
+});
+
+test('bugün ekranında widget kurulumu bağlantısı', () => {
+  assert.match(sayfaHtml(d()), /data-islem="widget">Widget kurulumu</);
+  assert.doesNotMatch(sayfaHtml(d({ gun: '2026-10-03' })), /data-islem="widget"/);
+});
+
+test('widget ekranı durumları', () => {
+  assert.match(widgetHtml('yukleniyor', ''), /data-islem="kopyala">Yükleniyor…</);
+  assert.match(widgetHtml('hazir', 'x'), /data-islem="kopyala">Betiği kopyala</);
+  assert.match(widgetHtml('kopyalandi', 'x'), /data-islem="kopyala">Kopyalandı</);
+  assert.match(widgetHtml('hazir', 'x'), /data-islem="geri"/);
+  assert.doesNotMatch(widgetHtml('hazir', 'x'), /<textarea/);
+  assert.match(widgetHtml('kopyalanamadi', 'const A = "<b>";'), /<textarea class="betik" readonly>const A = &quot;&lt;b&gt;&quot;;<\/textarea>/);
+  assert.match(widgetHtml('yuklenemedi', ''), /data-islem="widget">Tekrar dene</);
+  assert.match(widgetHtml('yuklenemedi', ''), /Betik yüklenemedi/);
 });
